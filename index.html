@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Money Goal Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .goal-form {
+      max-width: 500px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    input {
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px;
+      background: #28a745;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .goals {
+      max-width: 600px;
+      margin: 20px auto;
+    }
+    .goal {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border-left: 5px solid #007bff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .goal-info {
+      flex: 1;
+    }
+    .goal-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .goal input[type="number"] {
+      width: 80px;
+      padding: 5px;
+    }
+    .goal button {
+      background: #dc3545;
+    }
+    .goal button.complete {
+      background: #17a2b8;
+    }
+    .progress {
+      background-color: #e9ecef;
+      border-radius: 20px;
+      height: 10px;
+      margin-top: 6px;
+      overflow: hidden;
+      width: 100%;
+    }
+    .progress-bar {
+      height: 100%;
+      background-color: #28a745;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎯 Money Goal Tracker</h1>
+
+  <div class="goal-form">
+    <input type="text" id="goalName" placeholder="Goal Name" required />
+    <input type="number" id="targetAmount" placeholder="Target Amount" required />
+    <input type="number" id="currentAmount" placeholder="Current Saved Amount" required />
+    <button onclick="addGoal()">Add Goal</button>
+  </div>
+
+  <div class="goals" id="goalList"></div>
+
+  <script>
+    let goals = JSON.parse(localStorage.getItem("goals")) || [];
+
+    function saveGoals() {
+      localStorage.setItem("goals", JSON.stringify(goals));
+    }
+
+    function renderGoals() {
+      const list = document.getElementById("goalList");
+      list.innerHTML = "";
+      goals.forEach((goal, index) => {
+        const div = document.createElement("div");
+        div.className = "goal";
+        const percent = Math.min(100, (goal.current / goal.target) * 100).toFixed(2);
+        div.innerHTML = `
+          <div class="goal-info">
+            <strong>${goal.name}</strong><br/>
+            Saved: ₹${goal.current} / ₹${goal.target}
+            <div class="progress">
+              <div class="progress-bar" style="width: ${percent}%;"></div>
+            </div>
+          </div>
+          <div class="goal-actions">
+            <input type="number" min="1" placeholder="+₹" onchange="updateGoal(${index}, this.value); this.value='';" />
+            <button class="complete" onclick="markComplete(${index})">✅</button>
+            <button onclick="deleteGoal(${index})">🗑️</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function addGoal() {
+      const name = document.getElementById("goalName").value.trim();
+      const target = parseInt(document.getElementById("targetAmount").value);
+      const current = parseInt(document.getElementById("currentAmount").value);
+
+      if (!name || isNaN(target) || isNaN(current) || current > target) {
+        alert("Please enter valid values. Current amount cannot exceed target.");
+        return;
+      }
+
+      goals.push({ name, target, current });
+      saveGoals();
+      renderGoals();
+
+      document.getElementById("goalName").value = "";
+      document.getElementById("targetAmount").value = "";
+      document.getElementById("currentAmount").value = "";
+    }
+
+    function updateGoal(index, amount) {
+      const amt = parseInt(amount);
+      if (isNaN(amt) || amt <= 0) return;
+
+      const goal = goals[index];
+      const remaining = goal.target - goal.current;
+
+      if (amt > remaining) {
+        alert(`You can only add up to ₹${remaining} more to reach your goal.`);
+        return;
+      }
+
+      goal.current += amt;
+      saveGoals();
+      renderGoals();
+    }
+
+    function markComplete(index) {
+      if (goals[index].current >= goals[index].target) {
+        if (confirm("Goal achieved! Do you want to delete it?")) {
+          goals.splice(index, 1);
+          saveGoals();
+          renderGoals();
+        }
+      } else {
+        alert("You haven't reached your target yet!");
+      }
+    }
+
+    function deleteGoal(index) {
+      if (confirm("Are you sure you want to delete this goal?")) {
+        goals.splice(index, 1);
+        saveGoals();
+        renderGoals();
+      }
+    }
+
+    renderGoals();
+  </script>
+
+</body>
+</html>
